@@ -192,3 +192,6 @@ Docs/Images: Table and data visualizations from Sparkify.ipynb
 Index.md: Markdown for blog post
 
 ## Acknowledgements
+
+https://towardsdatascience.com/machine-learning-with-pyspark-and-mllib-solving-a-binary-classification-problem-96396065d2aa
+https://mapr.com/blog/churn-prediction-pyspark-using-mllib-and-ml-packages/
