@@ -4,13 +4,13 @@
 
 ## Project Overview
 
-The goal of this project was to perform exploratory analysis, data processing, and machine learning on a sample of sparkify user data to predict user Churn.
+The goal of this project was to perform exploratory analysis, data processing, and machine learning on a sample of Sparkify user data to predict user Churn.
 
-With the sparkify dataset reaching 12GB in data, frameworks such as Apache Spark are needed to process and pipeline the information for modeling. In this example, the entire dataset is not used. The goal of this repo was to protoype the process before deplying to cloud services where it can scale to the entire dataset.
+With the Sparkify dataset reaching 12GB in data, frameworks such as Apache Spark are needed to process and pipeline the information for modeling. In this example, rather than using the entire dataset a sample of 128MB. The goal of this project was to protoype the process of predicting Churn before later deploying it to cloud services where it can scale to the entire dataset.
 
 ## Predicting Churn
 
-Knowing when a user is likely to churn can help a company take pro-active actions to help retain that customer. Using features aggregated from user's activities or experiences on the platform can help build promising models for solving these problems.
+Knowing when a user is likely to churn can help a company take pro-active actions to help retain that customer. Using features aggregated from user's activities or experiences on the platform can help build promising models for solving this problem.
 
 I expect that by testing out several machine learning models and optimizing using the multiple metrics, there will be a model that returns a successful accuracy rate at predicing which users will churn.
 
@@ -26,13 +26,13 @@ print (data.count(), ' total records in dataset.')
 ```
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/total-records.png?raw=true">
 
-In it's raw form this dataset contains the records for each page(interaction) for each user. 
+In it's raw form this dataset contains the records for each page(interaction) of each user. 
 
 #### Cleaning and Preprocessing
 
 This dataset is relatively clean, with little to no missing values and errors that can be easily spotted. However, there were some missing user ID's in the orignal records. The first step was to remove these rows.
 
-Additionally, houra and day timestamp columns were created to help with data exploration and potential features. Most importantly of all, Churn is defined as a user confirming their cancellation.
+Additionally, hour and day timestamp columns were created to help with data exploration and potential features. Most importantly of all, Churn is defined as a user confirming their cancellation and added as the future label column for machine learning.
 
 ```
 data = data.dropna(how='any', subset= ['userId', 'sessionId'])
@@ -51,11 +51,11 @@ cancellation_confirmation = udf(lambda x: 1 if x == "Cancellation Confirmation" 
 ```
 #### Data Exploration
 
-I decided to investigate the difference between page interactions such as Advertisements and Thumb Ups per song listened by each churned and non churned user groups.
-
-In addition to the spotable difference in advertisements watched I decided to include Thumbs Up, Thumbs Down, and Add a friend to potential features for modelling.
+I decided to investigate the difference between page interactions such as 'Advertisements' and 'Thumb Ups' per song listened by each churned and non churned user groups.
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/page-breakdown-image.png?raw=true">
+
+In addition to the spotable difference in advertisements watched I decided to include 'Thumbs Down', and 'Add a friend' to potential features for modeling.
 
 #### Page Activity for Churned Users
 
@@ -73,8 +73,9 @@ As expected, free users are slightly more likely to churn than users who are on 
 
 ## Feature Engineering
 
-In additiion to using page interaction as a feature for modeling, I decided to normalize this activity by the number of songs each user had listened to.
+Using these page interaction counts alone would require scaling, but would still not be a great method for machine learning. Some users have been active for longer and would have performed more 'Thumbs Up' or Thumbs Down' regardless of satisfaction or disasisfaction when compared to less active or new users.
 
+The solution to this is to normalize each users activities by the amount of songs they have listened to, turning our features in into interactions per song.
 
 #### Selected Features
 
@@ -158,6 +159,8 @@ features_assembled = assembler.transform(ml_data)
 
 #### Splitting the Data
 
+Splitting the data into three parts: train (60%), validation(20%), test (20%)
+
 ```
 label_and_features = assembled_data.select(['label', 'features'])
     
@@ -203,8 +206,6 @@ def evaluate_model(preds):
     evaluator2 = BinaryClassificationEvaluator()
     print("Area Under ROC: " + str(evaluator2.evaluate(preds, {evaluator2.metricName: "areaUnderROC"})))
 ```
-
-As a metric for evaluation I decided to use both accuracy and area under ROC to validate each model. For refinement, and optmization I have included cross validation with F1 score as the evaluator.
 
 #### Training
 
