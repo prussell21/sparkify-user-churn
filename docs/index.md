@@ -49,6 +49,7 @@ data = data.withColumn("day", get_day(data.ts))
 #Defining Churn
 cancellation_confirmation = udf(lambda x: 1 if x == "Cancellation Confirmation" else 0, IntegerType())
 ```
+
 #### Data Exploration
 
 I decided to investigate the difference between page interactions such as 'Advertisements' and 'Thumb Ups' per song listened to by each churned and non churned user groups.
@@ -125,12 +126,14 @@ sums = model_data.groupBy('User ID').agg(_sum('Song').alias('Songs'),
                                              _sum('Add Friend').alias('Add Friend'),
                                              _max('Level').alias('Level'),
                                              _max('Churn').alias('label'))
-                                             
 ```
+                                             
 
 ```processed_data_pd.head()```
 
+
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/processed-data-head.png?raw=true">
+
 
 ```processed_data_pd.describe()```
 
