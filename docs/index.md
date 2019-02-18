@@ -127,9 +127,6 @@ sums = model_data.groupBy('User ID').agg(_sum('Song').alias('Songs'),
                                              _max('Level').alias('Level'),
                                              _max('Churn').alias('label'))
 ```
-                                             
-
-```processed_data_pd.head()```
 
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/processed-data-head.png?raw=true">
@@ -273,18 +270,6 @@ Results of using Cross Validation and F1 Score to optimize.
 
 ```
 def cross_validation(model, paramGrid, folds=3):
-    
-    '''
-    Cross_validation and optimization with f1 score
-    
-    INPUT
-    model: instantiated model
-    pramGrid: specific prameter grid for given model
-    folds(int): number of folds to use for cross validaiton
-    
-    OUTPUT
-    optimal cross_validated predictions dataset
-    '''
     
     #evaluate cross validation best model using f1 score
     evaluator = MulticlassClassificationEvaluator(metricName="f1")
