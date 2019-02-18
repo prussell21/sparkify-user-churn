@@ -6,17 +6,17 @@
 
 The goal of this project was to perform exploratory analysis, data processing, and machine learning on a sample of Sparkify user data to predict user Churn.
 
-With the Sparkify dataset reaching 12GB in data, frameworks such as Apache Spark are needed to process and pipeline the information for modeling. In this example, rather than using the entire dataset a sample of 128MB. The goal of this project was to protoype the process of predicting Churn before later deploying it to cloud services where it can scale to the entire dataset.
+With the Sparkify dataset reaching 12GB in data, frameworks such as Apache Spark are needed to process and pipeline the information for modeling. In this example, rather than using the entire dataset a sample of 128MB was used. The goal of this project was to protoype the process of predicting Churn before later deploying it to cloud services where it can scale to the entire dataset.
 
 ## Predicting Churn
 
-Knowing when a user is likely to churn can help a company take pro-active actions to help retain that customer. Using features aggregated from user's activities or experiences on the platform can help build promising models for solving this problem.
+Knowing when a user is likely to churn can help a company take pro-active actions to help retain that customer. Using features aggregated from user's activities or experiences on the platform can assist in build promising models for solving this problem.
 
-I expect that by testing out several machine learning models and optimizing using the multiple metrics, there will be a model that returns a successful accuracy rate at predicing which users will churn.
+I expect that by testing out several machine learning models and optimizing using the multiple metrics, there will be a model that returns a successful accuracy rate at predicting which users will churn.
 
 ## Understanding the Data
 
-Data used for this project was supplied by Udacity's Data Scientist Nanodgree program. The data contains a sample of user data records.
+Data used for this project was supplied by Udacity's Data Scientist Nanodgree program.
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/dataset-schema.png?raw=true">
 
@@ -26,11 +26,11 @@ print (data.count(), ' total records in dataset.')
 ```
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/total-records.png?raw=true">
 
-In it's raw form this dataset contains the records for each page(interaction) of each user. 
+In its raw form this dataset contains the records for each page(interaction) of each user. 
 
 #### Cleaning and Preprocessing
 
-This dataset is relatively clean, with little to no missing values and errors that can be easily spotted. However, there were some missing user ID's in the orignal records. The first step was to remove these rows.
+This dataset is relatively clean, with little to no missing values and errors that can be easily spotted. However, there were some missing user ID's in the original records. The first step was to remove these rows.
 
 Additionally, hour and day timestamp columns were created to help with data exploration and potential features. Most importantly of all, Churn is defined as a user confirming their cancellation and added as the future label column for machine learning.
 
@@ -51,11 +51,11 @@ cancellation_confirmation = udf(lambda x: 1 if x == "Cancellation Confirmation" 
 ```
 #### Data Exploration
 
-I decided to investigate the difference between page interactions such as 'Advertisements' and 'Thumb Ups' per song listened by each churned and non churned user groups.
+I decided to investigate the difference between page interactions such as 'Advertisements' and 'Thumb Ups' per song listened to by each churned and non churned user groups.
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/page-breakdown-image.png?raw=true">
 
-In addition to the spotable difference in advertisements watched I decided to include 'Thumbs Down', and 'Add a friend' to potential features for modeling.
+In addition to the spotable difference in advertisements watched, I decided to include 'Thumbs Down', and 'Add a friend' to potential features for modeling.
 
 #### Page Activity for Churned Users
 
@@ -65,7 +65,7 @@ In addition to the spotable difference in advertisements watched I decided to in
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/non-churned-page-count-table.png?raw=true">
 
-There is clearly a difference in page activity between users who churned and those who stayed. I decided to examin if there were any differences in the 'level' of a user and the likelihood of churning.
+There is clearly a difference in page activity between users who churned and those who stayed. I decided to examine if there were any differences in the 'level' of a user and the likelihood of churning.
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/free-vs-paid-breakdown.png?raw=true">
 
@@ -79,7 +79,7 @@ The solution to this is to normalize each users activities by the amount of song
 
 #### Selected Features
 
-'Adverts', 'Thumbs Up', 'Thumbs Down', and 'Add a friend' per song listened to. I also included the user's level (free or paid). 
+'Adverts', 'Thumbs Up', 'Thumbs Down', and 'Add a friend' per song listened to. I also included the user's level (free or paid), as there was evidence of differences between churning and not churning among these user groups.
 
 #### Per Song Dataset
 After a bit of data manipulation, the per song per feature dataset looked like this.
@@ -187,17 +187,6 @@ The labels in this dataset are not evenly weighted. In fact the target variable 
 
 ```
 def evaluate_model(preds):
-    '''
-    Evaluates models accruacy and area under roc
-    
-    INPUT
-    preds: models set of predicitons and labels
-    
-    OUTPUT
-    Accuracy
-    Area Under ROC
-    '''
-
     #instantiate multiclass evaluator
     evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
     print("Accuracy: " + str(evaluator.evaluate(preds, {evaluator.metricName: "accuracy"})))
@@ -209,7 +198,7 @@ def evaluate_model(preds):
 
 #### Training
 
-Initial model training and prediction using the validation set and arbitrarily chosen hyper parameters.
+To start, initial model training and prediction was doen using the validation set and arbitrarily chosen hyper parameters.
 
 ##### Logistic Regression
 
@@ -346,7 +335,7 @@ Best Parameters: maxIter: 10, regParam: 0.01
 Test set accuracy: 0.7962
 ```
 
-The validation accuracy improved for the logistic regression model after performing cross validation. According to the F1 scores accross each paramMap for this model, the model performs better the lower the regParam hyper parameter.
+The validation accuracy improved for the Logistic Regression model after tuning with cross validation. According to the F1 scores accross each paramMap, the model performs better the lower the regParam.
 
 ##### Random Forest
 ```
@@ -379,7 +368,7 @@ Best Parameters: maxDepth: 3, numTrees: 10
 
 Test accuracy: 0.8148
 ```
-Validation set accuracy remained the same after cross validation in this case. Due to the low number of users in the sparkify sample set it appears that the random forest classifier was unable to improve. The difference in maxDepth and numTrees did not effect its accuracy.
+Validation set accuracy remained the same after cross validation in this case. Due to the low number of users in the Sparkify sample set it appears that the random forest classifier was unable to improve. The difference in maxDepth and numTrees did not effect its accuracy.
 
 ##### Gradient Boosted Trees
 ```
@@ -412,20 +401,20 @@ Best Parameters: maxDepth: 5, maxIter: 10
 
 Test accuracy: 0.7037
 ```
-Like the random forest classifier, the GBT model also did not improve its validation accuracy after optimizing with cross validation. I would attribute this to the low amount of sample data.
+Like the random forest classifier, the GBT model also did not improve its validation accuracy after optimizing with cross validation. This would be attributed to the low amount of sample data.
 
 ## Conclusion
 
-In this case the superior model would be Random Forest. The Random Forest model boosted the best test set accuracy as well as the second best F1 score.
+In this case, the superior model would was the Random Forest Classifier. The Random Forest model boosted the best test set accuracy as well as the second best validation set F1 score.
 
 #### Issues
 
-Due to the extensive time it takes to train all of these models with cross validation, it was unfeesible to create a more robust hyper paramGrid for each individual model. Moving forward, it is highly recommened this process be refactored to be performed using cloud services such as AWS. 
+Due to the extensive time it takes to train all of these models with cross validation, it is unfeesible to create a more robust hyper paramGrid for each individual model. Moving forward, it is highly recommended this process be refactored and implemented using cloud services such as AWS. 
 
-In addition to the issues with time, the mini sparkiy datafile does not contain a sufficient amount of users (225) for successfully build a model. The entire datset of 12GB is needed in this case. It appears that the random forest and GBT models suffered from little training data, as they did not improve after cross validation.
+In addition to the issues with computation time, the mini Sparkify datafile does not contain a sufficient amount of unique users (225) for successfully build a model. The entire dataset of 12GB is needed in this case. It appears that the Random Forest and Gradient Boosted Trees models suffered from having little training data, as they did not improve after cross validation.
 
 #### Going Forward
 
-More features such as including the rest of the pages that users can visit would most likely increase the accuracy of these models as well. However, due to the contrainst of computing power, many features would increase the time to train significantly.
+Including more features such as the rest of the pages that users visited, or the time per session that the users spend on the platform before cancelling or logging out would likely increase the accuracy of these models. 
 
 
