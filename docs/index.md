@@ -28,7 +28,7 @@ print (data.count(), ' total records in dataset.')
 
 In its raw form this dataset contains the records for each page(interaction) of each user. 
 
-#### Cleaning and Preprocessing
+### Cleaning and Preprocessing
 
 This dataset is relatively clean, with little to no missing values and errors that can be easily spotted. However, there were some missing user ID's in the original records. The first step was to remove these rows.
 
@@ -50,7 +50,7 @@ data = data.withColumn("day", get_day(data.ts))
 cancellation_confirmation = udf(lambda x: 1 if x == "Cancellation Confirmation" else 0, IntegerType())
 ```
 
-#### Data Exploration
+### Data Exploration
 
 I decided to investigate the difference between page interactions such as 'Advertisements' and 'Thumb Ups' per song listened to by each churned and non churned user groups.
 
@@ -58,11 +58,11 @@ I decided to investigate the difference between page interactions such as 'Adver
 
 In addition to the spotable difference in advertisements watched, I decided to include 'Thumbs Down', and 'Add a friend' to potential features for modeling.
 
-#### Page Activity for Churned Users
+### Page Activity for Churned Users
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/churned-page-count-table.png?raw=true">
 
-#### Page Activity for Non Churned Users
+### Page Activity for Non Churned Users
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/non-churned-page-count-table.png?raw=true">
 
@@ -78,15 +78,16 @@ Using these page interaction counts alone would require scaling, but would still
 
 The solution to this is to normalize each users activities by the amount of songs they have listened to, turning our features in into interactions per song.
 
-#### Selected Features
+### Selected Features
 
 'Adverts', 'Thumbs Up', 'Thumbs Down', and 'Add a friend' per song listened to. I also included the user's level (free or paid), as there was evidence of differences between churning and not churning among these user groups.
 
-#### Per Song Dataset
+### Per Song Dataset
 After a bit of data manipulation, the per song per feature dataset looked like this.
 
 ```
-##Creating features and creating 'one hot encoded' dataset for selected page variables
+
+#Creating features and creating 'one hot encoded' dataset for selected page variables
 thumbs_up = udf(lambda x: 1 if x == "Thumbs Up" else 0, IntegerType())
 data = data.withColumn("Thumbs Up", thumbs_up("page"))
 
@@ -131,23 +132,22 @@ sums = model_data.groupBy('User ID').agg(_sum('Song').alias('Songs'),
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/processed-data-head.png?raw=true">
 
-
-```processed_data_pd.describe()```
-
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/processed_data-describe.png?raw=true">
 
-#### Vector Assembly
+### Vector Assembly
 
 Spark MLlib requires the feature inputs to be vectorized for training and prediction. This is performed using the VectorAssembler class as shown below. 
 
-```    
+```
+
+#Select relevant columns for sanity check and vector assembly
 ml_data = per_song_df.select(['Thumb Ups',
                                   'Thumb Downs',
                                   'Adverts',
                                   'Add Friend',
                                   'Level',
                                   'label'])
-    
+#Assembled features
 assembler = VectorAssembler(inputCols=['Thumb Ups',
                                            'Thumb Downs',
                                            'Adverts',
@@ -157,17 +157,18 @@ assembler = VectorAssembler(inputCols=['Thumb Ups',
 features_assembled = assembler.transform(ml_data)
 ```
 
-#### Splitting the Data
+### Splitting the Data
 
 Splitting the data into three parts: train (60%), validation(20%), test (20%)
 
 ```
+#Select label and features and split into train, test, and validation sets
 label_and_features = assembled_data.select(['label', 'features'])
     
 train, test, validation = label_and_features.randomSplit([0.60, 0.20, 0.20], seed=12345)
 ```
 
-#### Labels and Vector Assembled Features
+### Labels and Vector Assembled Features
 
 ```train.show()```
 
@@ -183,7 +184,7 @@ Test dataset size: 50
 
 The labels in this dataset are not evenly weighted. In fact the target variable is a relatively small number in this dataset (~23%). Because of this, F1 Score and accuracy was used to optimize and validate several models as to which was superior.
 
-#### Metrics and Evaluation
+### Metrics and Evaluation
 
 ```
 def evaluate_model(preds):
@@ -196,11 +197,11 @@ def evaluate_model(preds):
     print("Area Under ROC: " + str(evaluator2.evaluate(preds, {evaluator2.metricName: "areaUnderROC"})))
 ```
 
-#### Training
+### Training
 
 To start, initial model training and prediction was doen using the validation set and arbitrarily chosen hyper parameters.
 
-##### Logistic Regression
+**Logistic Regression**
 
 ```
 #instantiate model
@@ -221,7 +222,7 @@ Accuracy: 0.66
 Area Under ROC: 0.71
 ```
 
-##### Random Forest
+**Random Forest**
 
 ```
 rf = RandomForestClassifier(featuresCol='features', labelCol='label', numTrees=10, maxDepth=4)
@@ -241,7 +242,7 @@ Accuracy: 0.63
 Area Under ROC: 0.64
 ```
 
-##### Gradient Boosted Trees
+**Gradient Boosted Trees**
 
 ```
 #instantiate model
@@ -264,7 +265,7 @@ Area Under ROC: 0.65
 
 All three models performed quite poorly and failed to beat the benchmark of 0.77 (a prediction of 0 for all labels). The Logistic regression model returned the greatest Area Under ROC (0.71).
 
-#### Refinement
+### Refinement
 
 Results of using Cross Validation and F1 Score to optimize.
 
@@ -287,7 +288,7 @@ def cross_validation(model, paramGrid, folds=3):
     return cvpredictions, cvModel
  ```
 
-##### Logistic Regression
+**Logistic Regression**
 
 ```
 #instantiate random forest classifier
@@ -325,7 +326,7 @@ Test set accuracy: 0.7962
 
 The validation accuracy improved for the Logistic Regression model after tuning with cross validation. According to the F1 scores accross each paramMap, the model performs better the lower the regParam.
 
-##### Random Forest
+**Random Forest**
 ```
 #instantiate random forest classifier
 rf = RandomForestClassifier(featuresCol='features', labelCol='label')
@@ -333,7 +334,7 @@ rf = RandomForestClassifier(featuresCol='features', labelCol='label')
 #build paramgrid
 paramGrid = (ParamGridBuilder().addGrid(rf.maxDepth, [3, 4]).addGrid(rf.numTrees, [10, 15, 20]).build())
 
-##Cross validate on training model and display results of trained model when used to predict on the validation dataset
+#Cross validate on training model and display results of trained model when used to predict on the validation dataset
 cvpredictions, cvModel = cross_validation(rf, paramGrid)
 
 #store best model
@@ -358,7 +359,7 @@ Test accuracy: 0.8148
 ```
 Validation set accuracy remained the same after cross validation in this case. Due to the low number of users in the Sparkify sample set it appears that the random forest classifier was unable to improve. The difference in maxDepth and numTrees did not effect its accuracy.
 
-##### Gradient Boosted Trees
+**Gradient Boosted Trees**
 ```
 #instantiate gbt classifier
 gbt = GBTClassifier()
@@ -395,13 +396,13 @@ Like the random forest classifier, the GBT model also did not improve its valida
 
 In this case, the superior model would was the Random Forest Classifier. The Random Forest model boosted the best test set accuracy as well as the second best validation set F1 score.
 
-#### Issues
+### Issues
 
 Due to the extensive time it takes to train all of these models with cross validation, it is unfeesible to create a more robust hyper paramGrid for each individual model. Moving forward, it is highly recommended this process be refactored and implemented using cloud services such as AWS. 
 
 In addition to the issues with computation time, the mini Sparkify datafile does not contain a sufficient amount of unique users (225) for successfully build a model. The entire dataset of 12GB is needed in this case. It appears that the Random Forest and Gradient Boosted Trees models suffered from having little training data, as they did not improve after cross validation.
 
-#### Going Forward
+### Going Forward
 
 Including more features such as the rest of the pages that users visited, or the time per session that the users spend on the platform before cancelling or logging out would likely increase the accuracy of these models. 
 
