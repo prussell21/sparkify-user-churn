@@ -69,6 +69,8 @@ There is clearly a difference in page activity between users who churned and tho
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/free-vs-paid-breakdown.png?raw=true">
 
+As expected, free users are slightly more likely to churn than users who are on the paid subscription plan.
+
 ## Feature Engineering
 
 In additiion to using page interaction as a feature for modeling, I decided to normalize this activity by the number of songs each user had listened to.
@@ -105,7 +107,14 @@ userId = udf(lambda x: int(x), IntegerType())
 data = data.withColumn("User ID", userId("userId"))
 
 #Selecting feature and target from larger dataset
-model_data = data.select(['User ID','Thumbs up', 'Thumbs down', 'Song', 'Advert', 'Add Friend', 'Level', 'Churn'])
+model_data = data.select(['User ID',
+                          'Thumbs up',
+                          'Thumbs down',
+                          'Song',
+                          'Advert',
+                          'Add Friend',
+                          'Level',
+                          'Churn'])
 
 #Grouping by users and counting total page interactions
 sums = model_data.groupBy('User ID').agg(_sum('Song').alias('Songs'),
@@ -197,6 +206,78 @@ def evaluate_model(preds):
 
 As a metric for evaluation I decided to use both accuracy and area under ROC to validate each model. For refinement, and optmization I have included cross validation with F1 score as the evaluator.
 
+#### Training
+
+Initial model training and prediction using the validation set and arbitrarily chosen hyper parameters.
+
+##### Logistic Regression
+
+```
+#instantiate model
+lr = LogisticRegression(maxIter=10, regParam=0.02)
+
+#fit model to training data
+lr = lr.fit(train)
+
+#perform predictions on validation set
+lr_results = lr.transform(validation)
+
+evaluate_model(lr_results)
+```
+
+```
+Accuracy: 0.66
+
+Area Under ROC: 0.71
+```
+
+##### Random Forest
+
+```
+rf = RandomForestClassifier(featuresCol='features', labelCol='label', numTrees=10, maxDepth=4)
+
+#fit model to training data
+rf = rf.fit(train)
+
+#perform predictions on validation set
+rf_results = rf.transform(validation)
+
+evaluate_model(rf_results)
+```
+
+```
+Accuracy: 0.63
+
+Area Under ROC: 0.64
+```
+
+##### Gradient Boosted Trees
+
+```
+#instantiate model
+gbt = GBTClassifier(maxIter=15, maxDepth=4)
+
+#fit model to training data
+gbt = gbt.fit(train)
+
+#perform predictions on validation set
+gbt_results = gbt.transform(validation)
+
+evaluate_model(gbt_results)
+```
+
+```
+Accuracy: 0.638
+
+Area Under ROC: 0.65
+```
+
+All three models performed quite poorly and failed to beat the benchmark of 0.77 (a prediction of 0 for all labels). The Logistic regression model returned the greatest Area Under ROC (0.71).
+
+#### Refinement
+
+Results of using Cross Validation and F1 Score to optimize.
+
 ```
 def cross_validation(model, paramGrid, folds=3):
     
@@ -228,37 +309,31 @@ def cross_validation(model, paramGrid, folds=3):
     return cvpredictions, cvModel
  ```
 
-#### Training
-
 ##### Logistic Regression
 
 ```
-Accuracy: 0.66
+#instantiate random forest classifier
+lr = LogisticRegression()
 
-Area Under ROC: 0.71
+#build paramgrid
+paramGrid = (ParamGridBuilder().addGrid(lr.maxIter, [10, 20, 30]).addGrid(lr.regParam, [0.01, 0.02, 0.03]).build())
+
+##Cross validate on training model and display results of trained model when used to predict on the validation dataset
+cvpredictions, cvModel = cross_validation(lr, paramGrid)
+
+#store best model
+lr_best_model = cvModel.bestModel
+
+#evaluates optimized model's accuracy on the validation
+evaluate_model(cvpredictions)
+
+test_predictions = lr_best_model.transform(test)
+evaluate_model(test_predictions)
+
+test_predictions.show(10)
 ```
 
-##### Random Forest
-
-```
-Accuracy: 0.63
-
-Area Under ROC: 0.64
-```
-
-##### Gradient Boosted Trees
-
-```
-Accuracy: 0.638
-
-Area Under ROC: 0.65
-```
-
-#### Refinement
-
-Results of using Cross Validation and F1 Score to optimize
-
-##### Logistic Regression
+<img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/lr-results.png?raw=true">
 
 ```
 Validation accuracy: 0.6388
@@ -273,6 +348,26 @@ Test set accuracy: 0.7962
 The validation accuracy improved for the logistic regression model after performing cross validation. According to the F1 scores accross each paramMap for this model, the model performs better the lower the regParam hyper parameter.
 
 ##### Random Forest
+```
+#instantiate random forest classifier
+rf = RandomForestClassifier(featuresCol='features', labelCol='label')
+
+#build paramgrid
+paramGrid = (ParamGridBuilder().addGrid(rf.maxDepth, [3, 4]).addGrid(rf.numTrees, [10, 15, 20]).build())
+
+##Cross validate on training model and display results of trained model when used to predict on the validation dataset
+cvpredictions, cvModel = cross_validation(rf, paramGrid)
+
+#store best model
+rf_best_model = cvModel.bestModel
+
+#evaluates optimized model's accuracy on the validation
+evaluate_model(cvpredictions)
+
+test_predictions = rf_best_model.transform(test)
+evaluate_model(test_predictions)
+```
+<img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/rf-results.png?raw=true">
 
 ```
 Validation accuracy: 0.6388
@@ -286,6 +381,26 @@ Test accuracy: 0.8148
 Validation set accuracy remained the same after cross validation in this case. Due to the low number of users in the sparkify sample set it appears that the random forest classifier was unable to improve. The difference in maxDepth and numTrees did not effect its accuracy.
 
 ##### Gradient Boosted Trees
+```
+#instantiate gbt classifier
+gbt = GBTClassifier()
+
+#build param grid
+paramGrid = (ParamGridBuilder().addGrid(gbt.maxDepth, [4, 5]).addGrid(gbt.maxIter, [10, 20]).build())
+
+#perform cross validation using f1 evaluator metric
+cvpredictions, cvModel = cross_validation(gbt, paramGrid)
+
+#store best model
+gbt_best_model = cvModel.bestModel
+
+#evaluates optimized model's accuracy on the validation
+evaluate_model(cvpredictions)
+
+test_predictions = gbt_best_model.transform(test)
+evaluate_model(test_predictions)
+```
+<img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/gbt_results.png?raw=true">
 
 ```
 Validation accuracy: 0.6388
@@ -302,15 +417,14 @@ Like the random forest classifier, the GBT model also did not improve its valida
 
 In this case the superior model would be Random Forest. The Random Forest model boosted the best test set accuracy as well as the second best F1 score.
 
-### Issues
+#### Issues
 
 Due to the extensive time it takes to train all of these models with cross validation, it was unfeesible to create a more robust hyper paramGrid for each individual model. Moving forward, it is highly recommened this process be refactored to be performed using cloud services such as AWS. 
 
 In addition to the issues with time, the mini sparkiy datafile does not contain a sufficient amount of users (225) for successfully build a model. The entire datset of 12GB is needed in this case. It appears that the random forest and GBT models suffered from little training data, as they did not improve after cross validation.
 
-### More Features?
+#### Going Forward
 
 More features such as including the rest of the pages that users can visit would most likely increase the accuracy of these models as well. However, due to the contrainst of computing power, many features would increase the time to train significantly.
 
-## Requirements
 
