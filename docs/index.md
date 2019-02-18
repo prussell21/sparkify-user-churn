@@ -170,7 +170,10 @@ train, test, validation = label_and_features.randomSplit([0.60, 0.20, 0.20], see
 
 ### Labels and Vector Assembled Features
 
-```train.show()```
+```
+#display training set
+train.show()
+```
 
 <img src="https://github.com/prussell21/sparkify-user-churn/blob/master/docs/images/vector-assembled-feats-labels.png?raw=true">
 
@@ -270,6 +273,7 @@ All three models performed quite poorly and failed to beat the benchmark of 0.77
 Results of using Cross Validation and F1 Score to optimize.
 
 ```
+#Cross Validation and prediction using F1 Score
 def cross_validation(model, paramGrid, folds=3):
     
     #evaluate cross validation best model using f1 score
